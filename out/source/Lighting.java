@@ -22,12 +22,10 @@ public class Lighting extends PApplet {
 
 
 
-// Models
-PShape carShape, lampShape, streetShape, trafficLightShape;
-
 // Nub
 Scene scene;
 Node car;
+Node carLights;
 Node headLight1;
 Node headLight2;
 Node stopLight1;
@@ -38,6 +36,7 @@ Node lamp2;
 Node bulb2;
 Node street;
 Node trafficLight;
+Node trafficLightLights;
 Node topRedLight;
 Node topYellowLight;
 Node topGreenLight;
@@ -49,11 +48,8 @@ Node sideGreenLight;
 boolean leftLampControl = true;
 boolean rightLampControl = true;
 int trafficLightColor = 1;
-boolean specular = true;
 int headLightsControl = 1; // 0 -> Off ; 1 -> Lows ; 2 -> Highs
 boolean stopLightsControl = true;
-boolean axis = false;
-boolean night = true;
 
 // scene center
 Vector sceneCenter = new Vector(0,0,0);
@@ -78,23 +74,24 @@ public void setup() {
   texlightShader = loadShader("pixlightxfrag.glsl", "pixlightxvert.glsl");
 
   scene = new Scene(this);
-  scene.setRadius(1200);
+  scene.setRadius(800);
   scene.fit();
 
+  setupLights();
+  setupModels();
+}
+
+
+public void draw() {    
+  colorMode(HSB, 360, 100, 100);
+  background(0);
+  ambientLight(0,0,10);
+  scene.render();
+}
+
+public void setupModels() {
   car = new Node(scene, loadShape("Car/Car.obj"));
   car.setPosition(carPosition);
-
-  headLight1 = new Node(car);
-  headLight1.setPosition(carPosition.add(90, -90, -365));
-
-  headLight2 = new Node(car);
-  headLight2.setPosition(carPosition.add(-90, -90, -365));
-
-  stopLight1 = new Node(car);
-  stopLight1.setPosition(carPosition.add(85, -90, 370));
-
-  stopLight2 = new Node(car);
-  stopLight2.setPosition(carPosition.add(-85, -90, 370));
 
   lamp1 = new Node(scene, loadShape("Lamp/Lamp.obj"));
   lamp1.setPosition(lamp1Position);
@@ -109,13 +106,190 @@ public void setup() {
   street.setPosition(sceneCenter);
 }
 
-public void draw() {    
-  colorMode(HSB, 360, 100, 100);
-  background(0);
-  scene.render();
-  if(axis) {
-    scene.drawAxes();
-  }
+public void setupLights() {
+  carLights = new Node(scene);
+  carLights.setPosition(carPosition);
+
+  headLight1 = new Node(carLights){
+    @Override
+    public void graphics(PGraphics pg) {
+      lightSpecular(0, 0, 40);
+      switch(headLightsControl){
+        case 0:
+          // do nothing
+          break;
+        case 1: // LOWS
+          stroke(33, 12, 100);
+          sphere(10);
+          spotLight(33, 12, 100, 0, 0, 0, 0, 1, -1, PI/2, 1);
+          break;
+        case 2: // HIGHS
+          stroke(33, 12, 100);
+          sphere(10);
+          spotLight(33, 12, 100, 0, 0, 0, 0, 0, -1, PI, 1);
+          break;
+      }
+    }
+  };
+  headLight1.setPosition(Vector.add(carPosition, new Vector(90, -90, -365)));
+
+  headLight2 = new Node(carLights){
+    @Override
+      public void graphics(PGraphics pg) {
+        lightSpecular(0, 0, 40);
+        switch(headLightsControl){
+          case 0:
+            // do nothing
+            break;
+          case 1: // LOWS
+            stroke(33, 12, 100);
+            sphere(10);
+            spotLight(33, 12, 100, 0, 0, 0, 0, 1, -1, PI/2, 1);
+            break;
+          case 2: // HIGHS
+            stroke(33, 12, 100);
+            sphere(10);
+            spotLight(33, 12, 100, 0, 0, 0, 0, 0, -1, PI, 1);
+            break;
+        }
+      }
+  };
+  headLight2.setPosition(Vector.add(carPosition, new Vector(-90, -90, -365)));
+
+  stopLight1 = new Node(carLights){
+    @Override
+    public void graphics(PGraphics pg) {
+      lightSpecular(0, 100, 50);
+      if(stopLightsControl) {
+        stroke(0, 100, 100);
+        sphere(10);
+        spotLight(0, 100, 100, 0, 0, 0, 0, 1, 1, PI/2, 1);
+      }
+    }
+  };
+  stopLight1.setPosition(Vector.add(carPosition, new Vector(85, -90, 370)));
+
+  stopLight2 = new Node(carLights){
+    @Override
+    public void graphics(PGraphics pg) {
+      if(stopLightsControl) {
+        lightSpecular(0, 100, 50);
+        stroke(0, 100, 100);
+        sphere(10);
+        spotLight(0, 100, 100, 0, 0, 0, 0, 1, 1, PI/2, 1);
+      }
+    }
+  };
+  stopLight2.setPosition(Vector.add(carPosition, new Vector(-85, -90, 370)));
+  
+
+  bulb1 = new Node(scene){
+    @Override
+    public void graphics(PGraphics pg) {
+      lightSpecular(0, 0, 50);
+      if(rightLampControl) {
+        stroke(0, 0, 20);
+        sphere(10);
+        pointLight(31, 33, 50, 0, 0, 0);
+      }
+    }
+  };
+  bulb1.setPosition(Vector.add(lamp1Position, new Vector(0, -350, 0)));
+
+  /*bulb2 = new Node(scene){
+    @Override
+    public void graphics(PGraphics pg) {
+      lightSpecular(0, 0, 50);
+      if(leftLampControl) {
+        stroke(0, 0, 20);
+        sphere(10);
+        pointLight(31, 33, 50, 0, 0, 0);
+      }
+    }
+  };
+  bulb2.setPosition(Vector.add(lamp2Position, new Vector(0, -350, 0)));
+  */
+
+  trafficLightLights = new Node(scene);
+  trafficLightLights.setPosition(trafficLightPosition);
+
+  topRedLight = new Node(trafficLightLights){
+    @Override
+    public void graphics(PGraphics pg) {
+      if(trafficLightColor == 1) {
+        lightSpecular(0, 100, 50);
+        stroke(0, 100, 100);
+        sphere(5);
+        spotLight(0, 100, 100, 0, 0, 0, 0, 1, 1, PI/2, 0.5f);
+      }
+    }
+  };
+  topRedLight.setPosition(Vector.add(trafficLightPosition, new Vector(220, -100, -25)));
+
+  sideRedLight = new Node(trafficLightLights){
+    @Override
+    public void graphics(PGraphics pg) {
+      if(trafficLightColor == 1) {
+        lightSpecular(0, 100, 50);
+        stroke(0, 100, 100);
+        sphere(5);
+        spotLight(0, 100, 100, 0, 0, 0, 0, 1, 1, PI/2, 0.5f);
+      }
+    }
+  };
+  sideRedLight.setPosition(Vector.add(trafficLightPosition, new Vector(-100, +130, +50)));
+
+  topYellowLight = new Node(trafficLightLights){
+    @Override
+    public void graphics(PGraphics pg) {
+      if(trafficLightColor == 2) {
+        lightSpecular(60,100,50);
+        stroke(60,100,100);
+        sphere(5);
+        spotLight(60, 100, 100, 0, 0, 0, 0, 1, 1, PI/2, 0.5f);
+      }
+    }
+  };
+  topYellowLight.setPosition(Vector.add(trafficLightPosition, new Vector(220, -80, -25)));
+
+  sideYellowLight = new Node(trafficLightLights){
+    @Override
+    public void graphics(PGraphics pg) {
+      if(trafficLightColor == 2) {
+        lightSpecular(60,100,50);
+        stroke(60,100,100);
+        sphere(5);
+        spotLight(60, 100, 100, 0, 0, 0, 0, 1, 1, PI/2, 0.5f);
+      }
+    }
+  };
+  sideYellowLight.setPosition(Vector.add(trafficLightPosition, new Vector(-100, +150, +50)));
+
+  topGreenLight = new Node(trafficLightLights){
+    @Override
+    public void graphics(PGraphics pg) {
+      if(trafficLightColor == 3) {
+        lightSpecular(120,120,50);
+        stroke(120,120,100);
+        sphere(5);
+        spotLight(120, 120, 100, 0, 0, 0, 0, 1, 1, PI/2, 0.5f);
+      }
+    }
+  };
+  topGreenLight.setPosition(Vector.add(trafficLightPosition, new Vector(220, -60, -25)));
+
+  sideGreenLight = new Node(trafficLightLights){
+    @Override
+    public void graphics(PGraphics pg) {
+      if(trafficLightColor == 3) {
+        lightSpecular(120,120,50);
+        stroke(120,120,100);
+        sphere(5);
+        spotLight(120, 120, 100, 0, 0, 0, 0, 1, 1, PI/2, 0.5f);
+      }
+    }
+  };
+  sideGreenLight.setPosition(Vector.add(trafficLightPosition, new Vector(-100, +170, +50)));
 }
 
 public void mouseDragged() {
@@ -131,188 +305,6 @@ public void mouseWheel(MouseEvent event) {
   scene.moveForward(event.getCount() * 20);
 }
 
-/*void drawScene() {  
-  shader(texlightShader);
-  drawLights();
-
-  pushMatrix();
-  translate(lamp1_X , lamp1_Y, lamp1_Z);
-  shape(lamp_1);
-  popMatrix();
-
-  pushMatrix();
-  translate(lamp2_X , lamp2_Y, lamp2_Z);
-  shape(lamp_2);
-  popMatrix();
-
-  pushMatrix();  
-  translate(scene_X, scene_Y, scene_Z);
-  shape(street);  
-  popMatrix();
-
-  pushMatrix();  
-  shininess(0.2);
-  specular(0, 0, 100);
-  translate(car_X, car_Y, car_Z);
-  shape(car);
-  popMatrix();
-
-  resetShader();
-  pushMatrix();
-  translate(tlight_X , tlight_Y, tlight_Z);
-  shape(trafficLight);
-  popMatrix();
-
-  //resetShader();
-}*/
-/*
-void drawLights() {
-  if(night){
-    ambientLight(0, 0, 10);
-  } else {
-    ambientLight(0, 0, 80);
-  }
-
-  if(specular){
-    lightSpecular(0, 0, 40);
-  }
-
-  if(rightLampControl) {
-    pushMatrix();
-    translate(lamp1_X , lamp1_Y-350, lamp1_Z);
-    stroke(0, 0, 20);
-    sphere(10);
-    pointLight(31, 33, 50, 0, 0, 0);
-    popMatrix();
-  }
-
-  if(leftLampControl) {
-    pushMatrix();
-    translate(lamp2_X , lamp2_Y-350, lamp2_Z);
-    stroke(0, 0, 20);
-    sphere(10);
-    pointLight(31, 33, 100, 0, 0, 0);
-    popMatrix();
-  }
-
-  switch(headLightsControl){
-    case 0:
-      // do nothing
-      break;
-    case 1: // LOWS
-      pushMatrix();
-      translate(car_X + 90 , car_Y-90, car_Z-365);
-      stroke(33, 12, 100);
-      sphere(10);
-      spotLight(33, 12, 100, 0, 0, 0, 0, 1, -1, PI/2, 1);
-      popMatrix();
-
-      pushMatrix();
-      translate(car_X - 90 , car_Y-90, car_Z-365);
-      stroke(33, 12, 100);
-      sphere(10);
-      spotLight(33, 12, 100, 0, 0, 0, 0, 1, -1, PI/2, 1);
-      popMatrix();
-
-      break;
-    case 2: // HIGHS
-      pushMatrix();
-      translate(car_X + 90 , car_Y-90, car_Z-365);
-      stroke(33, 12, 100);
-      sphere(10);
-      spotLight(33, 12, 100, 0, 0, 0, 0, 0, -1, PI, 1);
-      popMatrix();
-
-      pushMatrix();
-      translate(car_X - 90 , car_Y-90, car_Z-365);
-      stroke(33, 12, 100);
-      sphere(10);
-      spotLight(33, 12, 100, 0, 0, 0, 0, 0, -1, PI, 1);
-      popMatrix();
-      
-      break;
-  }
-
-  if(specular){
-    lightSpecular(0,100,50);
-  }
-
-  if(stopLightsControl) {
-    pushMatrix();
-    translate(car_X + 85 , car_Y-90, car_Z+370);
-    stroke(0, 100, 100);
-    sphere(10);
-    spotLight(0, 100, 100, 0, 0, 0, 0, 1, 1, PI/2, 1);
-    popMatrix();
-
-    pushMatrix();
-    translate(car_X - 85 , car_Y-90, car_Z+370);
-    stroke(0, 100, 100);
-    sphere(10);
-    spotLight(0, 100, 100, 0, 0, 0, 0, 1, 1, PI/2, 1);
-    popMatrix();
-  }
-
-  switch (trafficLightColor) {
-    case 1: //red
-      if(specular){
-        lightSpecular(0, 100, 50);
-      }
-      // TOP
-      pushMatrix();
-      translate(tlight_X + 220, tlight_Y-100, tlight_Z-25);
-      stroke(0, 100, 100);
-      sphere(5);
-      spotLight(0, 100, 100, 0, 0, 0, 0, 1, 1, PI/2, 0.5);
-      popMatrix();
-      // SIDE
-      pushMatrix();
-      translate(tlight_X - 100, tlight_Y+130, tlight_Z+50);
-      stroke(0, 100, 100);
-      sphere(5);
-      spotLight(0, 100, 100, 0, 0, 0, 0, 1, 1, PI/2, 0.5);
-      popMatrix();
-      break;
-    case 2: //yellow
-      if(specular){
-        lightSpecular(60,100,50);
-      }
-      // TOP
-      pushMatrix();
-      translate(tlight_X + 220, tlight_Y-80, tlight_Z-25);
-      stroke(60,100,100);
-      sphere(5);
-      spotLight(60,100,100, 0, 0, 0, 0, 1, 1, PI/2, 0.5);
-      popMatrix();
-      //SIDE
-      pushMatrix();
-      translate(tlight_X - 100, tlight_Y+150, tlight_Z+50);
-      stroke(60,100,100);
-      sphere(5);
-      spotLight(60,100,100, 0, 0, 0, 0, 1, 1, PI/2, 0.5);
-      popMatrix();
-      break;
-    case 3: //green
-      if(specular){
-        lightSpecular(120, 120, 50);
-      }
-      //TOP
-      pushMatrix();
-      translate(tlight_X + 220, tlight_Y-60, tlight_Z-25);
-      stroke(120, 120, 100);
-      sphere(5);
-      spotLight(120, 120, 100, 0, 0, 0, 0, 1, 1, PI/2, 0.5);
-      popMatrix();
-      //SIDE
-      pushMatrix();
-      translate(tlight_X - 100, tlight_Y+170, tlight_Z+50);
-      stroke(120, 120, 100);
-      sphere(5);
-      spotLight(120, 120, 100, 0, 0, 0, 0, 1, 1, PI/2, 0.5);
-      popMatrix();
-      break;
-  }
-}*/
 public void keyPressed() {
   if (key == CODED) {
     if (keyCode == LEFT) {
@@ -321,42 +313,16 @@ public void keyPressed() {
     else if (keyCode == RIGHT) {
       rightLampControl = !rightLampControl;
     }
-  }
-  else if(key == 's'){
-    specular = !specular;
-  }
-  else if(key == 't'){
-    trafficLightColor = trafficLightColor == 0 ? 1 : 0;
-  }
-  else if(key == 'f'){
-    println("headLightsControl: "+headLightsControl);
-    headLightsControl = headLightsControl == 2 ? 0 : headLightsControl + 1;
-  }
-  else if(key == 'b'){
-    println("stopLightsControl: "+stopLightsControl);
-    stopLightsControl = !stopLightsControl;
+    else if(keyCode == UP){
+      headLightsControl = headLightsControl == 2 ? 0 : headLightsControl + 1;
+    }
+    else if(keyCode == DOWN){
+      stopLightsControl = !stopLightsControl;
+    }
   }
   else if(key == ' ') {
     trafficLightColor = trafficLightColor == 3 ? 1 : trafficLightColor + 1;
   }
-  else if(key == 'x') {
-    axis = !axis;
-  }
-  else if(key == 'n') {
-    night = !night;
-  }
-  
-}
-
-public void drawAxis() {
-  pushStyle();
-  stroke(0, 100, 100);
-  line(0, 0, 0, 1000, 0, 0);
-  stroke(240, 100, 100);
-  line(0, 0, 0, 0, 1000, 0);
-  stroke(120, 120, 100);
-  line(0, 0, 0, 0, 0, 1000);
-  popStyle();
 }
   public void settings() {  size(1080, 720, P3D); }
   static public void main(String[] passedArgs) {
