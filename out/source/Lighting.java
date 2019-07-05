@@ -6,6 +6,7 @@ import processing.opengl.*;
 import nub.core.*; 
 import nub.primitives.*; 
 import nub.processing.*; 
+import nub.core.constraint.*; 
 
 import java.util.HashMap; 
 import java.util.ArrayList; 
@@ -22,6 +23,7 @@ public class Lighting extends PApplet {
 
 
 
+
 // Nub
 Scene scene;
 Node car;
@@ -31,8 +33,10 @@ Node headLight2;
 Node stopLight1;
 Node stopLight2;
 Node lamp1;
+Node lamp1Lights;
 Node bulb1;
 Node lamp2;
+Node lamp2Lights;
 Node bulb2;
 Node street;
 Node trafficLight;
@@ -43,6 +47,9 @@ Node topGreenLight;
 Node sideRedLight;
 Node sideYellowLight;
 Node sideGreenLight;
+
+// Constraint
+LocalConstraint constraint = new LocalConstraint();
 
 // controls
 boolean leftLampControl = true;
@@ -77,8 +84,11 @@ public void setup() {
   scene.setRadius(800);
   scene.fit();
 
+  constraint.setTranslationConstraint(AxisPlaneConstraint.Type.AXIS, new Vector(0,0,1));
+
   setupLights();
   setupModels();
+  
 }
 
 
@@ -92,15 +102,23 @@ public void draw() {
 public void setupModels() {
   car = new Node(scene, loadShape("Car/Car.obj"));
   car.setPosition(carPosition);
+  car.setPickingThreshold(0);
+  car.setConstraint(constraint);
 
   lamp1 = new Node(scene, loadShape("Lamp/Lamp.obj"));
   lamp1.setPosition(lamp1Position);
+  lamp1.setPickingThreshold(0);
+  lamp1.setConstraint(constraint);
 
   lamp2 = new Node(scene, loadShape("Lamp/Lamp.obj"));
   lamp2.setPosition(lamp2Position);
+  lamp2.setPickingThreshold(0);
+  lamp2.setConstraint(constraint);
 
   trafficLight = new Node(scene, loadShape("TrafficLight/TrafficLight.obj"));
   trafficLight.setPosition(trafficLightPosition);
+  trafficLight.setPickingThreshold(0);
+  trafficLight.setConstraint(constraint);
 
   street = new Node(scene, loadShape("Street/Street.obj"));
   street.setPosition(sceneCenter);
@@ -181,9 +199,11 @@ public void setupLights() {
     }
   };
   stopLight2.setPosition(Vector.add(carPosition, new Vector(-85, -90, 370)));
-  
 
-  bulb1 = new Node(scene){
+  lamp1Lights = new Node(scene);
+  lamp1Lights.setPosition(lamp1Position);
+
+  bulb1 = new Node(lamp1Lights){
     @Override
     public void graphics(PGraphics pg) {
       lightSpecular(0, 0, 50);
@@ -196,7 +216,7 @@ public void setupLights() {
   };
   bulb1.setPosition(Vector.add(lamp1Position, new Vector(0, -350, 0)));
 
-  /*bulb2 = new Node(scene){
+  /*bulb2 = new Node(lamp2){
     @Override
     public void graphics(PGraphics pg) {
       lightSpecular(0, 0, 50);
@@ -292,37 +312,56 @@ public void setupLights() {
   sideGreenLight.setPosition(Vector.add(trafficLightPosition, new Vector(-100, +170, +50)));
 }
 
+public void mouseMoved() {
+  scene.cast();
+}
+
+public void mouseClicked() {
+  if(mouseButton == LEFT && scene.trackedNode() != null){
+    if(scene.trackedNode().equals(car)){
+      headLightsControl = headLightsControl == 2 ? 0 : headLightsControl + 1;
+      if(headLightsControl>0){
+        stopLightsControl = true;
+      } else {
+        stopLightsControl = false;
+      }
+    }
+    else if(scene.trackedNode().equals(lamp1)){
+      rightLampControl = !rightLampControl;
+    }
+    else if(scene.trackedNode().equals(lamp2)){
+      leftLampControl = !leftLampControl;
+    }
+    else if(scene.trackedNode().equals(trafficLight)){
+      trafficLightColor = trafficLightColor == 3 ? 0 : trafficLightColor + 1;
+    }
+  }
+
+  if(mouseButton == RIGHT){}
+  else if(scene.trackedNode() != null){
+    if(scene.trackedNode().equals(car)){
+      car.rotate(0,1,0,PI);
+      carLights.rotate(0,1,0,PI);
+    }
+  }
+}
+
 public void mouseDragged() {
-  if (mouseButton == LEFT)
+  if (mouseButton == LEFT && scene.trackedNode() == null){
     scene.spin();
-  else if (mouseButton == RIGHT)
+  }
+  else if (mouseButton == RIGHT){
     scene.translate();
-  else
-    scene.scale(mouseX - pmouseX);
+  }
+  else{
+    if(scene.trackedNode() == null){
+      scene.scale(mouseX - pmouseX);
+    }
+  }
 }
 
 public void mouseWheel(MouseEvent event) {
   scene.moveForward(event.getCount() * 20);
-}
-
-public void keyPressed() {
-  if (key == CODED) {
-    if (keyCode == LEFT) {
-      leftLampControl = !leftLampControl;
-    }
-    else if (keyCode == RIGHT) {
-      rightLampControl = !rightLampControl;
-    }
-    else if(keyCode == UP){
-      headLightsControl = headLightsControl == 2 ? 0 : headLightsControl + 1;
-    }
-    else if(keyCode == DOWN){
-      stopLightsControl = !stopLightsControl;
-    }
-  }
-  else if(key == ' ') {
-    trafficLightColor = trafficLightColor == 3 ? 1 : trafficLightColor + 1;
-  }
 }
   public void settings() {  size(1080, 720, P3D); }
   static public void main(String[] passedArgs) {
